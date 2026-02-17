@@ -1,10 +1,12 @@
 export interface Vehicle {
-  id: string;
-  name: string;
-  latitude: number;
-  longitude: number;
-  speed: number;
-  heading: number;
-  lastUpdate: string;
-  ignitionOn: boolean;
+  Code: string;
+  Name: string;
+  SPZ?: string;
+  Speed: number;
+  BatteryPercentage: number;
+  LastPosition: {
+    Latitude: string;
+    Longitude: string;
+  };
+  LastPositionTimestamp: string;
 }

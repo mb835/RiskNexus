@@ -1,42 +1,87 @@
 import type { Vehicle } from "../types/vehicle";
-import type { RiskAssessment } from "../types/risk";
+import type {
+  RiskAssessment,
+  RiskLevel,
+  RiskReason,
+} from "../types/risk";
 
-export function calculateRisk(vehicle: Vehicle): RiskAssessment {
+export function calculateRisk(
+  vehicle: Vehicle
+): RiskAssessment {
   let riskScore = 0;
-  const reasons: string[] = [];
+  const reasons: RiskReason[] = [];
 
-  // ---- Speed evaluation ----
-  if (vehicle.speed > 110) {
+  /* -----------------------
+     SPEED RISK
+  ------------------------ */
+
+  if (vehicle.Speed > 130) {
+    riskScore += 4;
+    reasons.push({
+      type: "speedExtreme",
+      value: vehicle.Speed,
+    });
+  } else if (vehicle.Speed > 110) {
     riskScore += 3;
-    reasons.push(`Speed exceeds 110 km/h (${vehicle.speed} km/h)`);
-  } else if (vehicle.speed > 90) {
-    riskScore += 1;
-    reasons.push(`Speed exceeds 90 km/h (${vehicle.speed} km/h)`);
-  }
-
-  // ---- Last update validation ----
-  const lastUpdateTime = new Date(vehicle.lastUpdate).getTime();
-
-  if (Number.isNaN(lastUpdateTime)) {
+    reasons.push({
+      type: "speedHigh",
+      value: vehicle.Speed,
+    });
+  } else if (vehicle.Speed > 95) {
     riskScore += 2;
-    reasons.push("Invalid last update timestamp");
-  } else {
-    const now = Date.now();
-    const diffMs = now - lastUpdateTime;
-    const minutesSinceUpdate = diffMs / (1000 * 60);
-
-    if (minutesSinceUpdate > 5) {
-      riskScore += 2;
-      reasons.push(
-        `No update for ${Math.floor(minutesSinceUpdate)} minutes`
-      );
-    }
+    reasons.push({
+      type: "speedAboveLimit",
+      value: vehicle.Speed,
+    });
+  } else if (vehicle.Speed > 85) {
+    riskScore += 1;
+    reasons.push({
+      type: "speedSlightlyElevated",
+      value: vehicle.Speed,
+    });
   }
 
-  // ---- Risk level mapping ----
-  let riskLevel: "ok" | "warning" | "critical";
+  /* -----------------------
+     UPDATE DELAY RISK
+  ------------------------ */
 
-  if (riskScore >= 5) {
+  const lastUpdateTime = new Date(
+    vehicle.LastPositionTimestamp
+  ).getTime();
+
+  const now = Date.now();
+  const minutesSinceUpdate =
+    (now - lastUpdateTime) / (1000 * 60);
+
+  const minutes = Math.floor(minutesSinceUpdate);
+
+  if (minutesSinceUpdate > 180) {
+    riskScore += 3;
+    reasons.push({
+      type: "noUpdate",
+      value: minutes,
+    });
+  } else if (minutesSinceUpdate > 60) {
+    riskScore += 2;
+    reasons.push({
+      type: "noUpdate",
+      value: minutes,
+    });
+  } else if (minutesSinceUpdate > 15) {
+    riskScore += 1;
+    reasons.push({
+      type: "noUpdate",
+      value: minutes,
+    });
+  }
+
+  /* -----------------------
+     FINAL RISK LEVEL
+  ------------------------ */
+
+  let riskLevel: RiskLevel;
+
+  if (riskScore >= 6) {
     riskLevel = "critical";
   } else if (riskScore >= 3) {
     riskLevel = "warning";
@@ -45,7 +90,10 @@ export function calculateRisk(vehicle: Vehicle): RiskAssessment {
   }
 
   return {
-    vehicleId: vehicle.id,
+    vehicleId: vehicle.Code,
+    vehicleName: vehicle.Name,
+    spz: vehicle.SPZ ?? "",
+    speed: vehicle.Speed,
     riskScore,
     riskLevel,
     reasons,
