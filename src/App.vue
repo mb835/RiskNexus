@@ -2,12 +2,15 @@
 import { ref, onMounted, computed } from "vue";
 import RiskChart from "./components/RiskChart.vue";
 import FleetMap from "./components/FleetMap.vue";
+import VehicleDetailDrawer from "./components/VehicleDetailDrawer.vue";
 import { fetchGroups, fetchVehiclesByGroup } from "./api/fleetApi";
 import { fetchEcoEvents } from "./services/ecoEventsService";
 import { calculateRisk } from "./services/riskEngine";
+import { calculateServiceStatus } from "./services/serviceEngine";
 import type { Vehicle } from "./types/vehicle";
 import type {
   RiskAssessment,
+  AssessmentWithService,
   RiskReason,
   RiskLevel,
 } from "./types/risk";
@@ -17,12 +20,26 @@ import type {
 -------------------------- */
 
 const loading = ref(true);
-const riskAssessments = ref<RiskAssessment[]>([]);
+const riskAssessments = ref<AssessmentWithService[]>([]);
 const currentView = ref<"dashboard" | "map">("dashboard");
 const activeFilter = ref<"all" | RiskLevel>("all");
 
 /* Coordinates to zoom to on the map. Passed down to FleetMap. */
 const focusCoordinates = ref<{ latitude: number; longitude: number } | null>(null);
+
+/* DRAWER STATE */
+const selectedVehicle = ref<AssessmentWithService | null>(null);
+const drawerOpen = ref(false);
+
+function openDrawer(assessment: AssessmentWithService) {
+  selectedVehicle.value = assessment;
+  drawerOpen.value = true;
+}
+
+function handleFocusFromDrawer(coords: { latitude: number; longitude: number }) {
+  focusCoordinates.value = coords;
+  currentView.value = "map";
+}
 
 /* -------------------------
    NAČTENÍ DAT
@@ -38,12 +55,24 @@ async function loadData() {
     const vehicles: Vehicle[] =
       await fetchVehiclesByGroup(groupCode);
 
-    const assessments = await Promise.all(
+    const raw = await Promise.all(
       vehicles.map(async (vehicle) => {
         const ecoEvents = await fetchEcoEvents(vehicle.Code);
         return calculateRisk(vehicle, ecoEvents);
       })
     );
+
+    // Attach real service info derived from the API odometer value
+    const assessments: AssessmentWithService[] = raw.map((a, i) => {
+      const odometer = vehicles[i].Odometer ?? 0;
+      return {
+        ...a,
+        serviceInfo: {
+          odometer,
+          ...calculateServiceStatus(odometer),
+        },
+      };
+    });
 
     riskAssessments.value = assessments;
   } catch (error) {
@@ -247,12 +276,22 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
           <div
             v-for="vehicle in priorityVehicles"
             :key="vehicle.vehicleId"
-            class="bg-slate-800/50 p-4 rounded-lg border border-slate-700 hover:border-red-500/50 transition"
+            class="bg-slate-800/50 p-4 rounded-lg border border-slate-700 hover:border-red-500/50 transition cursor-pointer"
+            @click="openDrawer(vehicle)"
           >
             <div class="flex justify-between items-start">
               <div class="flex-1">
-                <div class="font-medium text-slate-200 mb-1">
+                <div class="flex items-center gap-2 font-medium text-slate-200 mb-1">
                   {{ vehicle.vehicleName }}
+                  <span
+                    v-if="vehicle.serviceInfo.serviceStatus !== 'ok'"
+                    class="text-xs"
+                    :class="{
+                      'text-red-400':    vehicle.serviceInfo.serviceStatus === 'critical',
+                      'text-yellow-400': vehicle.serviceInfo.serviceStatus === 'warning',
+                    }"
+                    :title="vehicle.serviceInfo.serviceStatus === 'critical' ? 'Servis nutný' : 'Brzy servis'"
+                  >🛠</span>
                 </div>
                 <div class="text-xs text-slate-400 mb-2">
                   {{ vehicle.spz }}
@@ -374,11 +413,21 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
             <tr
               v-for="assessment in filteredAssessments"
               :key="assessment.vehicleId"
-              class="border-t border-slate-800 hover:bg-slate-800/50 transition"
+              class="border-t border-slate-800 hover:bg-slate-800/50 transition cursor-pointer"
+              @click="openDrawer(assessment)"
             >
               <td class="p-4">
-                <div class="font-medium">
+                <div class="flex items-center gap-2 font-medium">
                   {{ assessment.vehicleName }}
+                  <span
+                    v-if="assessment.serviceInfo.serviceStatus !== 'ok'"
+                    class="text-xs"
+                    :class="{
+                      'text-red-400':    assessment.serviceInfo.serviceStatus === 'critical',
+                      'text-yellow-400': assessment.serviceInfo.serviceStatus === 'warning',
+                    }"
+                    :title="assessment.serviceInfo.serviceStatus === 'critical' ? 'Servis nutný' : 'Brzy servis'"
+                  >🛠</span>
                 </div>
                 <div class="text-xs text-slate-500">
                   {{ assessment.spz }}
@@ -441,4 +490,13 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
     </div>
 
   </div>
+
+  <!-- VEHICLE DETAIL DRAWER -->
+  <VehicleDetailDrawer
+    :assessment="selectedVehicle"
+    :open="drawerOpen"
+    @close="drawerOpen = false"
+    @focus-map="handleFocusFromDrawer"
+  />
+
 </template>

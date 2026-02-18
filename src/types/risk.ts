@@ -1,5 +1,27 @@
 export type RiskLevel = "ok" | "warning" | "critical";
 
+/* -------------------------
+   SERVICE / MAINTENANCE
+-------------------------- */
+
+export type ServiceStatus = "ok" | "warning" | "critical";
+
+export interface ServiceInfo {
+  /** Current odometer reading in km (from GPS Dozor API field Odometer) */
+  odometer: number;
+  /** Km reading at which next service is due */
+  nextServiceAt: number;
+  /** Remaining km until service (nextServiceAt - odometer) */
+  remainingKm: number;
+  serviceStatus: ServiceStatus;
+}
+
+/**
+ * Local extension of RiskAssessment with maintenance data.
+ * Computed client-side — do NOT persist or send to backend.
+ */
+export type AssessmentWithService = RiskAssessment & { serviceInfo: ServiceInfo };
+
 export type RiskReasonType =
   | "speedExtreme"
   | "speedHigh"
