@@ -114,6 +114,24 @@ app.get("/api/vehicle/:vehicleCode/eco", async (req, res) => {
 });
 
 /* ---------------------------
+   FUEL / SENSOR ROUTE
+---------------------------- */
+
+app.get("/api/vehicle/:vehicleCode/sensors/:sensorNames", async (req, res) => {
+  const { vehicleCode, sensorNames } = req.params;
+  const { from, to } = req.query;
+
+  if (!from || !to) {
+    return res.status(400).json({ error: "Missing required query params: from, to" });
+  }
+
+  await proxyRequest(
+    res,
+    `${BASE_URL}/vehicle/${vehicleCode}/sensors/${sensorNames}?from=${from}&to=${to}`
+  );
+});
+
+/* ---------------------------
    START SERVER
 ---------------------------- */
 

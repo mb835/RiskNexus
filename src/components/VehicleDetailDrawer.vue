@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from "vue";
+import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import type { AssessmentWithService, RiskLevel } from "../types/risk";
 import { formatKm, serviceStatusLabel } from "../services/maintenanceService";
 import { serviceProgressPercent } from "../services/serviceEngine";
+import { fetchFuelSnapshots } from "../services/fuelService";
+import { evaluateFuelRisk } from "../services/fuelIntelligence";
+import type { FuelRiskResult } from "../services/fuelIntelligence";
 
 /* -------------------------
    PROPS & EMITS
@@ -69,6 +72,95 @@ function formatRiskLevel(level: RiskLevel): string {
     case "critical": return "Kritické";
   }
 }
+
+/* -------------------------
+   FUEL MONITORING
+   Fetched lazily when the drawer opens.
+   Cached per vehicleId to avoid re-fetching while same vehicle is shown.
+-------------------------- */
+
+// Module-level caches — survive reactive re-renders, cleared on page reload
+const fuelCache          = new Map<string, FuelRiskResult>();
+const fuelTimestampCache = new Map<string, string | null>();
+
+const fuelResult        = ref<FuelRiskResult | null>(null);
+const fuelLastTimestamp = ref<string | null>(null);
+const fuelLoading       = ref(false);
+const fuelError         = ref(false);
+
+/**
+ * Returns the ISO timestamp of the most recent snapshot that carries
+ * a fuel reading, or null when no usable snapshot exists.
+ */
+function extractLastTimestamp(snapshots: ReturnType<typeof Array.prototype.slice>): string | null {
+  for (let i = snapshots.length - 1; i >= 0; i--) {
+    const s = snapshots[i];
+    if (s.fuelVolume !== undefined || s.fuelConsumedTotal !== undefined) {
+      return s.timestamp ?? null;
+    }
+  }
+  return snapshots[snapshots.length - 1]?.timestamp ?? null;
+}
+
+/**
+ * Returns a Czech relative-time string for the "Poslední kontrola" line.
+ * Returns null when the timestamp is absent or unparseable.
+ */
+function formatRelativeTime(isoTime: string | null): string | null {
+  if (!isoTime) return null;
+  const diffMs  = Date.now() - new Date(isoTime).getTime();
+  if (isNaN(diffMs)) return null;
+  const minutes = Math.floor(diffMs / 60_000);
+  if (minutes < 1)  return "právě teď";
+  if (minutes < 60) return `před ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  return `před ${hours} h`;
+}
+
+async function loadFuelData(vehicleId: string): Promise<void> {
+  if (fuelCache.has(vehicleId)) {
+    fuelResult.value        = fuelCache.get(vehicleId)!;
+    fuelLastTimestamp.value = fuelTimestampCache.get(vehicleId) ?? null;
+    return;
+  }
+
+  fuelLoading.value = true;
+  fuelError.value   = false;
+
+  try {
+    const snapshots         = await fetchFuelSnapshots(vehicleId);
+    const result            = evaluateFuelRisk(snapshots);
+    const timestamp         = extractLastTimestamp(snapshots);
+
+    fuelCache.set(vehicleId, result);
+    fuelTimestampCache.set(vehicleId, timestamp);
+
+    fuelResult.value        = result;
+    fuelLastTimestamp.value = timestamp;
+  } catch {
+    fuelError.value         = true;
+    fuelResult.value        = null;
+    fuelLastTimestamp.value = null;
+  } finally {
+    fuelLoading.value = false;
+  }
+}
+
+// Fetch when the drawer opens or switches to a different vehicle
+watch(
+  () => [props.open, props.assessment?.vehicleId] as const,
+  ([open, vehicleId]) => {
+    if (open && vehicleId) {
+      loadFuelData(vehicleId);
+    } else if (!open) {
+      // Reset visible state; caches are kept for quick re-open
+      fuelResult.value        = null;
+      fuelLastTimestamp.value = null;
+      fuelError.value         = false;
+      fuelLoading.value       = false;
+    }
+  }
+);
 
 /* -------------------------
    ACTIONS
@@ -207,9 +299,84 @@ function handleFocusMap() {
                 />
               </div>
               <div class="text-[10px] text-slate-600 mt-1 text-right">
-                {{ progressPercent }}% intervalu spotřebováno
+                Využito {{ progressPercent }} % servisního intervalu
               </div>
             </div>
+          </div>
+
+          <!-- FUEL MONITORING -->
+          <div>
+            <h3 class="text-xs font-semibold text-slate-400 uppercase mb-3">
+              ⛽ Palivo
+            </h3>
+
+            <!-- Loading -->
+            <div
+              v-if="fuelLoading"
+              class="text-sm text-slate-500 animate-pulse"
+            >
+              Načítám data paliva…
+            </div>
+
+            <!-- Error -->
+            <div
+              v-else-if="fuelError"
+              class="text-sm text-slate-500 italic"
+            >
+              Data paliva nejsou dostupná
+            </div>
+
+            <!-- No anomaly -->
+            <div
+              v-else-if="fuelResult && fuelResult.severity === 'none'"
+            >
+              <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-900/30 border border-green-700 text-green-400 text-xs font-semibold">
+                <span class="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0"></span>
+                Palivo v normě
+              </div>
+              <p class="mt-2 text-[11px] text-slate-500">
+                Poslední kontrola: {{ formatRelativeTime(fuelLastTimestamp) ?? "Čas kontroly není k dispozici" }}
+              </p>
+            </div>
+
+            <!-- Medium severity -->
+            <div
+              v-else-if="fuelResult && fuelResult.severity === 'medium'"
+              class="flex items-start gap-3 px-4 py-3 rounded-lg bg-yellow-900/30 border border-yellow-700"
+            >
+              <span class="text-yellow-400 text-base flex-shrink-0">⚠️</span>
+              <div>
+                <p class="text-xs font-semibold text-yellow-400 mb-0.5">
+                  Zvýšená spotřeba paliva
+                </p>
+                <p class="text-xs text-yellow-300/80">
+                  {{ fuelResult.description ?? "Spotřeba paliva neodpovídá aktuální rychlosti vozidla" }}
+                </p>
+                <p class="mt-1.5 text-[11px] text-yellow-500/60">
+                  Poslední kontrola: {{ formatRelativeTime(fuelLastTimestamp) ?? "Čas kontroly není k dispozici" }}
+                </p>
+              </div>
+            </div>
+
+            <!-- High severity -->
+            <div
+              v-else-if="fuelResult && fuelResult.severity === 'high'"
+              class="flex items-start gap-3 px-4 py-3 rounded-lg bg-red-900/30 border border-red-700"
+            >
+              <span class="text-red-400 text-base flex-shrink-0">🚨</span>
+              <div>
+                <p class="text-xs font-semibold text-red-400 mb-0.5">
+                  Podezřelý úbytek paliva
+                </p>
+                <p class="text-xs text-red-300/80">
+                  {{ fuelResult.description ?? "Náhlý pokles objemu paliva bez odpovídající jízdy" }}
+                </p>
+                <p class="mt-1.5 text-[11px] text-red-500/60">
+                  Poslední kontrola: {{ formatRelativeTime(fuelLastTimestamp) ?? "Čas kontroly není k dispozici" }}
+                </p>
+              </div>
+            </div>
+
           </div>
 
         </div>
