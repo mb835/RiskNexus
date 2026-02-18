@@ -21,6 +21,9 @@ const riskAssessments = ref<RiskAssessment[]>([]);
 const currentView = ref<"dashboard" | "map">("dashboard");
 const activeFilter = ref<"all" | RiskLevel>("all");
 
+/* Coordinates to zoom to on the map. Passed down to FleetMap. */
+const focusCoordinates = ref<{ latitude: number; longitude: number } | null>(null);
+
 /* -------------------------
    NAČTENÍ DAT
 -------------------------- */
@@ -166,6 +169,23 @@ function toggleFilter(level: "all" | RiskLevel) {
   activeFilter.value =
     activeFilter.value === level ? "all" : level;
 }
+
+/* -------------------------
+   MAP FOCUS
+-------------------------- */
+
+function handleFocusVehicle(coords: { latitude: number; longitude: number }) {
+  focusCoordinates.value = coords;
+  currentView.value = "map";
+}
+
+function focusVehicleOnMap(assessment: RiskAssessment) {
+  const lat = parseFloat(assessment.position.latitude);
+  const lng = parseFloat(assessment.position.longitude);
+  if (!isNaN(lat) && !isNaN(lng)) {
+    handleFocusVehicle({ latitude: lat, longitude: lng });
+  }
+}
 </script>
 
 <template>
@@ -254,6 +274,12 @@ function toggleFilter(level: "all" | RiskLevel) {
                 >
                   Bez komunikace 6h+
                 </div>
+                <button
+                  class="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition"
+                  @click.stop="focusVehicleOnMap(vehicle)"
+                >
+                  📍 Na mapě
+                </button>
               </div>
             </div>
           </div>
@@ -408,7 +434,10 @@ function toggleFilter(level: "all" | RiskLevel) {
 
     <!-- MAPA -->
     <div v-else>
-      <FleetMap :assessments="riskAssessments" />
+      <FleetMap
+        :assessments="riskAssessments"
+        :focus-coordinates="focusCoordinates"
+      />
     </div>
 
   </div>

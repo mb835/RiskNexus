@@ -17,6 +17,7 @@ import { getVehicleIcon } from "../utils/mapIcons";
 
 interface Props {
   assessments: RiskAssessment[];
+  focusCoordinates?: { latitude: number; longitude: number } | null;
 }
 
 const props = defineProps<Props>();
@@ -26,7 +27,7 @@ const props = defineProps<Props>();
 -------------------------- */
 
 const mapContainer = ref<HTMLElement | null>(null);
-let mapInstance: L.Map | null = null;
+const mapInstance = ref<L.Map | null>(null);
 let markerLayer: L.MarkerClusterGroup | null = null;
 
 const mapFocus = ref<"europe" | "czech">("europe");
@@ -53,7 +54,7 @@ function getRiskLabel(level: RiskLevel): string {
 function initMap() {
   if (!mapContainer.value) return;
 
-  mapInstance = L.map(mapContainer.value, {
+  mapInstance.value = L.map(mapContainer.value, {
     center: [50.0755, 14.4378],
     zoom: 6,
   });
@@ -62,16 +63,15 @@ function initMap() {
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     maxZoom: 18,
-  }).addTo(mapInstance);
+  }).addTo(mapInstance.value);
 
-  // ✅ Marker Cluster místo obyčejné vrstvy
   markerLayer = L.markerClusterGroup({
     showCoverageOnHover: false,
     maxClusterRadius: 60,
     disableClusteringAtZoom: 12,
   });
 
-  mapInstance.addLayer(markerLayer);
+  mapInstance.value.addLayer(markerLayer);
 
   renderMarkers();
 }
@@ -81,7 +81,7 @@ function initMap() {
 -------------------------- */
 
 function renderMarkers() {
-  if (!mapInstance || !markerLayer) return;
+  if (!mapInstance.value || !markerLayer) return;
 
   markerLayer.clearLayers();
 
@@ -92,7 +92,7 @@ function renderMarkers() {
   });
 
   if (valid.length === 0) {
-    mapInstance.setView([50, 14], 5, { animate: false });
+    mapInstance.value.setView([50, 14], 5, { animate: false });
     return;
   }
 
@@ -148,17 +148,17 @@ function renderMarkers() {
 -------------------------- */
 
 function applyViewport(bounds: L.LatLngBounds, count: number) {
-  if (!mapInstance) return;
+  if (!mapInstance.value) return;
 
   if (mapFocus.value === "czech") {
-    mapInstance.setView([49.8, 15.5], 7, { animate: false });
+    mapInstance.value.setView([49.8, 15.5], 7, { animate: false });
     return;
   }
 
   if (count === 1) {
-    mapInstance.setView(bounds.getCenter(), 9, { animate: false });
+    mapInstance.value.setView(bounds.getCenter(), 9, { animate: false });
   } else {
-    mapInstance.fitBounds(bounds, {
+    mapInstance.value.fitBounds(bounds, {
       padding: [50, 50],
       animate: false,
     });
@@ -169,12 +169,28 @@ function applyViewport(bounds: L.LatLngBounds, count: number) {
    LIFECYCLE
 -------------------------- */
 
-onMounted(initMap);
+onMounted(() => {
+  initMap();
+
+  // Apply focus coordinates if provided at mount time.
+  // Runs after initMap() so the default view is overridden, not the other way around.
+  if (props.focusCoordinates && mapInstance.value) {
+    const { latitude, longitude } = props.focusCoordinates;
+
+    setTimeout(() => {
+      if (!mapInstance.value) return;
+      mapInstance.value.invalidateSize();
+      mapInstance.value.setView([latitude, longitude], 15, {
+        animate: true,
+      });
+    }, 200);
+  }
+});
 
 onUnmounted(() => {
-  if (mapInstance) {
-    mapInstance.remove();
-    mapInstance = null;
+  if (mapInstance.value) {
+    mapInstance.value.remove();
+    mapInstance.value = null;
   }
 });
 
@@ -187,6 +203,7 @@ watch(
 watch(mapFocus, () => {
   renderMarkers();
 });
+
 </script>
 
 <template>
