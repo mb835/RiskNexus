@@ -67,6 +67,9 @@ function createIcon(
       size = 40;
   }
 
+  // Critical markers are rendered larger so they stand out at a glance
+  if (riskLevel === "critical") size += 10;
+
   return L.divIcon({
     className: "vehicle-emoji-icon",
     html: `
