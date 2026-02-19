@@ -2,7 +2,6 @@
 import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import type { AssessmentWithService, RiskLevel } from "../types/risk";
 import { formatKm, serviceStatusLabel } from "../services/maintenanceService";
-import { serviceProgressPercent } from "../services/serviceEngine";
 import { fetchFuelSnapshots } from "../services/fuelService";
 import { evaluateFuelRisk } from "../services/fuelIntelligence";
 import type { FuelRiskResult } from "../services/fuelIntelligence";
@@ -40,9 +39,7 @@ onUnmounted(() => window.removeEventListener("keydown", handleKeydown));
 
 const svc = computed(() => props.assessment?.serviceInfo ?? null);
 
-const progressPercent = computed(() =>
-  svc.value ? serviceProgressPercent(svc.value.odometer) : 0
-);
+const progressPercent = computed(() => svc.value?.progressPercent ?? null);
 
 const progressBarClass = computed(() => {
   if (!svc.value) return "bg-slate-600";
@@ -285,22 +282,29 @@ function handleFocusMap() {
               </div>
             </div>
 
-            <!-- Progress bar -->
+            <!-- Progress bar — only rendered when interval percentage is computable -->
             <div class="mt-4">
               <div class="flex justify-between text-[11px] text-slate-500 mb-1.5">
                 <span>Interval servisu</span>
                 <span>{{ serviceStatusLabel(svc.serviceStatus) }}</span>
               </div>
-              <div class="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  class="h-full rounded-full transition-all duration-500"
-                  :class="progressBarClass"
-                  :style="{ width: progressPercent + '%' }"
-                />
-              </div>
-              <div class="text-[10px] text-slate-600 mt-1 text-right">
-                Využito {{ progressPercent }} % servisního intervalu
-              </div>
+
+              <template v-if="progressPercent !== null">
+                <div class="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    class="h-full rounded-full transition-all duration-500"
+                    :class="progressBarClass"
+                    :style="{ width: progressPercent + '%' }"
+                  />
+                </div>
+                <div class="text-[10px] text-slate-600 mt-1 text-right">
+                  Využito {{ progressPercent }} % servisního intervalu
+                </div>
+              </template>
+
+              <p v-else class="text-[11px] text-slate-500 italic mt-1">
+                Interval nelze určit – chybí údaj o posledním servisu
+              </p>
             </div>
           </div>
 

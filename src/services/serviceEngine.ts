@@ -10,39 +10,44 @@
 
 import type { ServiceStatus } from "../types/risk";
 
-export const SERVICE_INTERVAL = 15_000; // km between scheduled services
-
 export interface ServiceCalculation {
   nextServiceAt: number;
+  /** Km at which the previous service milestone falls. */
+  lastServiceAt: number;
   remainingKm: number;
   serviceStatus: ServiceStatus;
+  /** Percentage of the current service interval consumed (0–100). */
+  progressPercent: number;
 }
 
 /**
  * Derive service status from a live odometer reading.
  *
- * nextServiceAt — the next multiple of SERVICE_INTERVAL at or above odometer
- * remainingKm   — km until that service point
- * serviceStatus — urgency level based on remainingKm
+ * serviceInterval — per-vehicle interval (10 000–20 000 km) seeded from the odometer,
+ *                   giving each vehicle a different interval without extra parameters.
+ * lastServiceAt   — most recent service milestone below the current odometer
+ * nextServiceAt   — lastServiceAt + serviceInterval
+ * remainingKm     — km until that service point
+ * serviceStatus   — urgency level based on remainingKm
  */
 export function calculateServiceStatus(odometer: number): ServiceCalculation {
-  const nextServiceAt =
-    Math.ceil(odometer / SERVICE_INTERVAL) * SERVICE_INTERVAL;
+  const intervalSeed    = Math.abs(Math.floor(odometer));
+  const serviceInterval = 10_000 + (intervalSeed % 10_000); // 10 000 – 19 999 km
 
-  const remainingKm = nextServiceAt - odometer;
+  const lastServiceAt = odometer - (odometer % serviceInterval);
+  const nextServiceAt = lastServiceAt + serviceInterval;
+  const remainingKm   = nextServiceAt - odometer;
 
   const serviceStatus: ServiceStatus =
     remainingKm <= 1000 ? "critical" :
     remainingKm <= 3000 ? "warning"  :
     "ok";
 
-  return { nextServiceAt, remainingKm, serviceStatus };
-}
+  const interval = nextServiceAt - lastServiceAt;
+  const used     = odometer - lastServiceAt;
+  const progressPercent = interval > 0
+    ? Math.min(100, Math.max(0, Math.round((used / interval) * 100)))
+    : 0;
 
-/**
- * Progress bar percentage for the current service interval.
- * 0% = just serviced, 100% = service due now.
- */
-export function serviceProgressPercent(odometer: number): number {
-  return Math.min(100, Math.round(((odometer % SERVICE_INTERVAL) / SERVICE_INTERVAL) * 100));
+  return { nextServiceAt, lastServiceAt, remainingKm, serviceStatus, progressPercent };
 }

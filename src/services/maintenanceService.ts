@@ -16,9 +16,8 @@ import type { ServiceInfo, ServiceStatus } from "../types/risk";
    CONSTANTS
 -------------------------- */
 
-const SERVICE_INTERVAL_KM = 10_000;
-const ODOMETER_MIN_KM     = 10_000;
-const ODOMETER_RANGE_KM   = 170_000; // results in 10 000 – 180 000
+const ODOMETER_MIN_KM  = 10_000;
+const ODOMETER_RANGE_KM = 170_000; // results in 10 000 – 180 000
 
 /* -------------------------
    DETERMINISTIC HASH
@@ -40,18 +39,28 @@ function hashVehicleId(id: string): number {
 /**
  * Returns a deterministic ServiceInfo object for a given vehicleId.
  *
- * - odometer      — stable mock between 10 000 and 180 000 km
- * - remainingKm   — stable mock between 0 and 9 999 km
- * - nextServiceAt — odometer + remainingKm
- * - serviceStatus — derived from remainingKm thresholds
+ * - serviceInterval    — per-vehicle interval between 8 000 and 15 000 km
+ * - odometer           — stable mock between 10 000 and 180 000 km
+ * - kmSinceLastService — position within the current interval (independent seed)
+ * - remainingKm        — serviceInterval − kmSinceLastService
+ * - nextServiceAt      — lastServiceAt + serviceInterval
+ * - serviceStatus      — derived from remainingKm thresholds
+ *
+ * All values are fully deterministic per vehicleId.
+ * Two separate hash seeds ensure odometer and progress are independent.
  */
 export function getServiceInfo(vehicleId: string): ServiceInfo {
-  const h = hashVehicleId(vehicleId);
+  const baseHash     = hashVehicleId(vehicleId);
+  const progressHash = hashVehicleId(vehicleId + "_progress");
+  const odometerHash = hashVehicleId(vehicleId + "_odo");
 
-  // Use low bits for odometer, shifted bits for remaining (independent)
-  const odometer    = ODOMETER_MIN_KM + (h % (ODOMETER_RANGE_KM + 1));
-  const remainingKm = (h >>> 4) % SERVICE_INTERVAL_KM;
-  const nextServiceAt = odometer + remainingKm;
+  const serviceInterval    = 8_000 + (baseHash % 7_000);          // 8 000 – 14 999 km
+  const kmSinceLastService = progressHash % serviceInterval;       // 0 – (serviceInterval − 1)
+  const remainingKm        = serviceInterval - kmSinceLastService;
+
+  const odometer      = ODOMETER_MIN_KM + (odometerHash % (ODOMETER_RANGE_KM + 1));
+  const lastServiceAt = odometer - kmSinceLastService;
+  const nextServiceAt = lastServiceAt + serviceInterval;
 
   const serviceStatus: ServiceStatus =
     remainingKm <= 500  ? "critical" :
@@ -60,7 +69,6 @@ export function getServiceInfo(vehicleId: string): ServiceInfo {
 
   return { odometer, nextServiceAt, remainingKm, serviceStatus };
 }
-
 /* -------------------------
    DISPLAY HELPERS
    Used by components — keeps formatting logic out of templates.
@@ -80,10 +88,21 @@ export function serviceStatusLabel(status: ServiceStatus): string {
 
 /**
  * Progress bar fill percentage (0–100).
- * Represents how much of the service interval has been consumed.
+ * Represents how much of the vehicle's service interval has been consumed.
  * Full bar (100%) = needs service now.
+ *
+ * remainingKm is passed directly so the caller does not need to recompute it.
+ * The interval is back-derived as: nextServiceMileage − (currentMileage − remainingKm).
  */
-export function serviceProgressPercent(remainingKm: number): number {
-  const consumed = SERVICE_INTERVAL_KM - remainingKm;
-  return Math.min(100, Math.max(0, Math.round((consumed / SERVICE_INTERVAL_KM) * 100)));
+export function serviceProgressPercent(
+  currentMileage: number,
+  nextServiceMileage: number,
+  remainingKm: number,
+): number {
+  const interval = nextServiceMileage - (currentMileage - remainingKm);
+
+  if (interval <= 0) return 0;
+
+  const used = interval - remainingKm;
+  return Math.min(100, Math.max(0, Math.round((used / interval) * 100)));
 }

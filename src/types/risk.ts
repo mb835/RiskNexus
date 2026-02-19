@@ -11,9 +11,13 @@ export interface ServiceInfo {
   odometer: number;
   /** Km reading at which next service is due */
   nextServiceAt: number;
+  /** Km reading at which the previous service occurred */
+  lastServiceAt?: number;
   /** Remaining km until service (nextServiceAt - odometer) */
   remainingKm: number;
   serviceStatus: ServiceStatus;
+  /** Percentage of the current service interval consumed (0–100) */
+  progressPercent: number;
 }
 
 /**
