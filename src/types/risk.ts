@@ -16,8 +16,6 @@ export interface ServiceInfo {
   /** Remaining km until service (nextServiceAt - odometer) */
   remainingKm: number;
   serviceStatus: ServiceStatus;
-  /** Percentage of the current service interval consumed (0–100) */
-  progressPercent: number;
 }
 
 /**
@@ -33,11 +31,13 @@ export type RiskReasonType =
   | "speedSlightlyElevated"
   | "noUpdate"
   | "noUpdateCritical"
-  | "ecoEvent";
+  | "ecoEvent"
+  | "weather";
 
 export interface RiskReason {
   type: RiskReasonType;
-  value: number;
+  /** Numeric for operational reasons; descriptive string for weather reasons. */
+  value: number | string;
   /**
    * Optional count (used for aggregated eco events)
    * Example: 3 eco events in last 24h

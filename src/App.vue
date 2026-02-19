@@ -7,6 +7,7 @@ import { fetchGroups, fetchVehiclesByGroup } from "./api/fleetApi";
 import { fetchEcoEvents } from "./services/ecoEventsService";
 import { calculateRisk } from "./services/riskEngine";
 import { calculateServiceStatus } from "./services/serviceEngine";
+import type { WeatherData } from "./services/weatherRiskEngine";
 import type { Vehicle } from "./types/vehicle";
 import type {
   RiskAssessment,
@@ -23,6 +24,8 @@ const loading = ref(true);
 const riskAssessments = ref<AssessmentWithService[]>([]);
 const currentView = ref<"dashboard" | "map">("dashboard");
 const activeFilter = ref<"all" | RiskLevel>("all");
+const weatherRiskEnabled = ref(false);
+const weatherData = ref<WeatherData | undefined>(undefined);
 
 /* Coordinates to zoom to on the map. Passed down to FleetMap. */
 const focusCoordinates = ref<{ latitude: number; longitude: number } | null>(null);
@@ -55,18 +58,35 @@ async function loadData() {
     const vehicles: Vehicle[] =
       await fetchVehiclesByGroup(groupCode);
 
-    const raw = await Promise.all(
+    const rawPairs = await Promise.all(
       vehicles.map(async (vehicle) => {
-        const ecoEvents = await fetchEcoEvents(vehicle.Code);
-        return calculateRisk(vehicle, ecoEvents);
+        try {
+          const ecoEvents = await fetchEcoEvents(vehicle.Code);
+          return {
+            assessment: calculateRisk(
+              vehicle,
+              ecoEvents,
+              weatherRiskEnabled.value && weatherData.value ? weatherData.value : undefined,
+              weatherRiskEnabled.value && !!weatherData.value,
+            ),
+            vehicle,
+          };
+        } catch (err) {
+          console.error("Vehicle risk pipeline error:", vehicle.Code, err);
+          return null;
+        }
       })
     );
 
+    const validPairs = rawPairs.filter(
+      (p): p is { assessment: RiskAssessment; vehicle: Vehicle } => p !== null,
+    );
+
     // Attach real service info derived from the API odometer value
-    const assessments: AssessmentWithService[] = raw.map((a, i) => {
-      const odometer = vehicles[i].Odometer ?? 0;
+    const assessments: AssessmentWithService[] = validPairs.map(({ assessment, vehicle }) => {
+      const odometer = vehicle.Odometer ?? 0;
       return {
-        ...a,
+        ...assessment,
         serviceInfo: {
           odometer,
           ...calculateServiceStatus(odometer),
@@ -523,6 +543,37 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
 
     <!-- MAPA -->
     <div v-else>
+
+      <!-- WEATHER RISK TOGGLE -->
+      <div class="flex items-center gap-3 mb-4">
+        <button
+          type="button"
+          role="switch"
+          :aria-checked="weatherRiskEnabled"
+          class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none"
+          :class="weatherRiskEnabled ? 'bg-blue-600' : 'bg-slate-600'"
+          @click="weatherRiskEnabled = !weatherRiskEnabled"
+        >
+          <span
+            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200"
+            :class="weatherRiskEnabled ? 'translate-x-5' : 'translate-x-0'"
+          />
+        </button>
+
+        <span
+          class="text-sm text-slate-300 cursor-pointer select-none"
+          :title="'Přidá kontextový rizikový faktor podle aktuálního počasí v lokaci vozidla.'"
+          @click="weatherRiskEnabled = !weatherRiskEnabled"
+        >
+          Zohlednit počasí v risk skóre
+        </span>
+
+        <span
+          class="text-slate-500 cursor-help text-sm"
+          title="Přidá kontextový rizikový faktor podle aktuálního počasí v lokaci vozidla."
+        >ⓘ</span>
+      </div>
+
       <FleetMap
         :assessments="filteredAssessments"
         :focus-coordinates="focusCoordinates"

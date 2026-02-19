@@ -114,6 +114,74 @@ app.get("/api/vehicle/:vehicleCode/eco", async (req, res) => {
 });
 
 /* ---------------------------
+   WEATHER ROUTE
+   TTL cache (10 min) implemented with a plain Map to avoid a hard
+   dependency on node-cache at startup. Functionally identical to
+   NodeCache({ stdTTL: 600 }). Replace with node-cache once installed.
+---------------------------- */
+
+const WEATHER_TTL_MS = 600_000; // 10 minutes
+const weatherCache = new Map(); // key → { data, expiresAt }
+
+function weatherCacheGet(key) {
+  const entry = weatherCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    weatherCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function weatherCacheSet(key, data) {
+  weatherCache.set(key, { data, expiresAt: Date.now() + WEATHER_TTL_MS });
+}
+
+app.get("/api/weather", async (req, res) => {
+  const { lat, lng } = req.query;
+
+  if (!lat || !lng) {
+    return res.status(400).json({ error: "Missing lat/lng" });
+  }
+
+  const cacheKey = `${lat}_${lng}`;
+  const cached = weatherCacheGet(cacheKey);
+  if (cached) return res.json(cached);
+
+  const apiKey = process.env.OPENWEATHER_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: "OPENWEATHER_KEY not configured" });
+  }
+
+  const url =
+    `https://api.openweathermap.org/data/2.5/weather` +
+    `?lat=${lat}&lon=${lng}&units=metric&appid=${apiKey}`;
+
+  try {
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      return res.status(502).json({ error: "Weather API error", status: response.status });
+    }
+
+    const raw = await response.json();
+
+    const normalized = {
+      temperature:  raw.main?.temp        ?? 0,
+      windSpeed:    raw.wind?.speed       ?? 0,
+      weatherMain:  raw.weather?.[0]?.main      ?? "Unknown",
+      weatherId:    raw.weather?.[0]?.id        ?? 0,
+      precipitation: raw.rain?.["1h"] ?? raw.snow?.["1h"] ?? 0,
+    };
+
+    weatherCacheSet(cacheKey, normalized);
+    res.json(normalized);
+  } catch {
+    res.status(500).json({ error: "Failed to fetch weather data" });
+  }
+});
+
+/* ---------------------------
    FUEL / SENSOR ROUTE
 ---------------------------- */
 

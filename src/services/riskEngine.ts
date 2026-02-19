@@ -5,11 +5,16 @@ import type {
   RiskReason,
 } from "../types/risk";
 import type { EcoEvent } from "../types/ecoEvent";
+import { calculateWeatherRisk } from "./weatherRiskEngine";
+import type { WeatherData } from "./weatherRiskEngine";
 
 export function calculateRisk(
   vehicle: Vehicle,
-  ecoEvents?: EcoEvent[]
+  ecoEvents?: EcoEvent[],
+  weatherData?: WeatherData,
+  weatherEnabled?: boolean,
 ): RiskAssessment {
+  try {
   let riskScore = 0;
   const reasons: RiskReason[] = [];
 
@@ -103,6 +108,21 @@ export function calculateRisk(
   }
 
   /* -----------------------
+     WEATHER RISK (optional)
+  ------------------------ */
+
+  if (weatherEnabled && weatherData) {
+    const { weatherRiskBump, reasons: weatherReasons } =
+      calculateWeatherRisk(weatherData);
+
+    riskScore += weatherRiskBump;
+
+    weatherReasons.forEach((reason) => {
+      reasons.push({ type: "weather", value: reason });
+    });
+  }
+
+  /* -----------------------
      FINAL RISK LEVEL
   ------------------------ */
 
@@ -130,4 +150,21 @@ export function calculateRisk(
       longitude: vehicle.LastPosition?.Longitude ?? 0,
     },
   };
+  } catch (error) {
+    console.error("calculateRisk failed:", vehicle.Code, error);
+    return {
+      vehicleId: vehicle.Code,
+      vehicleName: vehicle.Name,
+      spz: vehicle.SPZ ?? "",
+      speed: vehicle.Speed ?? 0,
+      riskScore: 0,
+      riskLevel: "ok",
+      reasons: [],
+      calculatedAt: new Date().toISOString(),
+      position: {
+        latitude: vehicle.LastPosition?.Latitude ?? "0",
+        longitude: vehicle.LastPosition?.Longitude ?? "0",
+      },
+    };
+  }
 }
