@@ -4,9 +4,13 @@ export default {
       "./index.html",
       "./src/**/*.{vue,ts,js}"
     ],
-    theme: {
-      extend: {},
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ["Inter", "system-ui", "sans-serif"],
+      },
     },
+  },
     plugins: [],
   }
   

@@ -39,8 +39,8 @@ const centerTextPlugin = {
     const centerX = width / 2;
     const centerY = height / 2;
 
-    ctx.font = "600 56px Inter, system-ui, sans-serif";
-    ctx.fillStyle = "#f8fafc";
+    ctx.font = "600 48px Inter, system-ui, sans-serif";
+    ctx.fillStyle = "#f1f5f9";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(total.value.toString(), centerX, centerY - 8);
@@ -90,9 +90,9 @@ function renderChart() {
             props.ok,
           ],
           backgroundColor: [
-            "#ef4444",
-            "#facc15",
-            "#22c55e",
+            "rgba(239, 68, 68, 0.85)",
+            "rgba(234, 179, 8, 0.85)",
+            "rgba(34, 197, 94, 0.85)",
           ],
           borderWidth: 0,
           hoverOffset: 6,
@@ -123,9 +123,9 @@ function renderChart() {
         },
         tooltip: {
           backgroundColor: "#0f172a",
-          borderColor: "#1e293b",
+          borderColor: "rgba(71, 85, 105, 0.5)",
           borderWidth: 1,
-          titleColor: "#fff",
+          titleColor: "#f8fafc",
           bodyColor: "#cbd5e1",
         },
       },
@@ -146,8 +146,8 @@ watch(
 </script>
 
 <template>
-  <div class="bg-slate-900 p-6 rounded-xl border border-slate-800">
-    <h2 class="text-sm uppercase text-slate-400 mb-4">
+  <div class="rounded-xl border border-slate-700/50 bg-slate-900 p-6">
+    <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
       {{ UI_LABELS.chart.title }}
     </h2>
 
