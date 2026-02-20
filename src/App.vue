@@ -422,7 +422,11 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
 
       <!-- OPERATIONAL PRIORITY PANEL -->
       <div class="bg-slate-900 rounded-xl border border-slate-800 p-6 mb-8">
-        <h2 class="text-lg font-semibold mb-4">
+        <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+          <span
+            v-if="priorityVehicles.length > 0"
+            class="priority-dot"
+          ></span>
           Vyžaduje okamžitou pozornost
         </h2>
 
@@ -705,6 +709,25 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
 </template>
 
 <style scoped>
+.priority-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #ef4444;
+  animation: dotPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes dotPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.6;
+  }
+}
+
 .weather-active {
   color: #38bdf8;
   font-weight: 600;
