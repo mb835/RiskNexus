@@ -408,7 +408,7 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
 
       <div class="flex items-center gap-6">
         <div
-          v-if="!loading"
+          v-if="!loading && currentView === 'dashboard'"
           class="flex items-center gap-2"
         >
           <button
@@ -498,7 +498,7 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
     </div>
 
     <!-- DASHBOARD -->
-    <div v-else-if="currentView === 'dashboard'" class="space-y-10">
+    <div v-else-if="currentView === 'dashboard'" class="space-y-8">
 
       <!-- 1) HERO SECTION -->
       <div
@@ -547,7 +547,7 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
       </div>
 
       <!-- 2) KPI CARDS -->
-      <div class="grid grid-cols-4 gap-4">
+      <div class="grid grid-cols-4 gap-6">
         <div
           class="rounded-xl border border-slate-800 bg-slate-900/80 px-5 py-4 cursor-pointer transition hover:border-slate-700"
           :class="activeFilter === 'all' ? 'ring-1 ring-slate-600' : ''"
@@ -588,10 +588,10 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
         </div>
       </div>
 
-      <!-- 3) MAIN CONTENT GRID: 70% left / 30% right -->
-      <div class="grid grid-cols-1 lg:grid-cols-10 gap-6">
-        <!-- LEFT: Chart + Table (70%) -->
-        <div class="lg:col-span-7 space-y-6">
+      <!-- 3) MAIN CONTENT GRID -->
+      <div class="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8 items-stretch">
+        <!-- LEFT COLUMN -->
+        <div class="flex flex-col gap-6 min-w-0 h-full">
           <!-- Risk Distribution Card -->
           <RiskChart
               :critical="criticalCount"
@@ -601,14 +601,14 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
 
           <!-- Top 3 nejrizikovější vozidla -->
           <div v-if="priorityVehicles.length > 0">
-            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
+            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
               Nejrizikovější vozidla (Top 3)
             </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div
                 v-for="v in priorityVehicles"
                 :key="v.vehicleId"
-                class="rounded-xl border border-slate-700/50 bg-slate-900/80 p-4 cursor-pointer hover:bg-slate-800/50 transition flex items-center justify-between gap-3"
+                class="rounded-xl border border-slate-700/50 bg-slate-900/80 p-6 cursor-pointer hover:bg-slate-800/50 transition flex items-center justify-between gap-3"
                 @click="openDrawer(v)"
               >
                 <div class="min-w-0 flex-1">
@@ -633,10 +633,10 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
                 <thead>
                   <tr class="border-t border-slate-700/50">
                     <th class="w-1" />
-                    <th class="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Vozidlo</th>
-                    <th class="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Risk score</th>
-                    <th class="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Rychlost</th>
-                    <th class="text-right py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Akce</th>
+                    <th class="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Vozidlo</th>
+                    <th class="text-center py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Risk score</th>
+                    <th class="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Rychlost</th>
+                    <th class="text-right py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Akce</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -654,12 +654,12 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
                         'bg-emerald-500': assessment.riskLevel === 'ok',
                       }"
                     />
-                    <td class="py-4 px-4">
-                      <p class="font-medium text-slate-100">
-                        {{ assessment.vehicleName }}
+                    <td class="py-4 px-6">
+                      <p class="font-medium text-slate-100 flex items-center gap-2">
+                        <span class="truncate">{{ assessment.vehicleName }}</span>
                         <span
                           v-if="assessment.serviceInfo.serviceStatus !== 'ok'"
-                          class="ml-1 text-xs text-amber-400"
+                          class="shrink-0 text-xs text-amber-400"
                           :class="{ 'text-red-400': assessment.serviceInfo.serviceStatus === 'critical' }"
                           :title="assessment.serviceInfo.serviceStatus === 'critical' ? 'Servis nutný' : 'Brzy servis'"
                         >🛠</span>
@@ -681,22 +681,24 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
                         </span>
                       </div>
                     </td>
-                    <td class="py-4 px-4">
-                      <span
-                        class="inline-flex px-3 py-2 rounded-lg text-lg font-bold transition-all duration-200"
-                        :class="{
-                          'bg-emerald-500/15 text-emerald-400 group-hover:scale-[1.03] group-hover:shadow-[0_0_16px_rgba(16,185,129,0.2)]': assessment.riskLevel === 'ok',
-                          'bg-amber-500/15 text-amber-400 group-hover:scale-[1.03] group-hover:shadow-[0_0_16px_rgba(245,158,11,0.2)]': assessment.riskLevel === 'warning',
-                          'bg-red-500/15 text-red-400 group-hover:scale-[1.03] group-hover:shadow-[0_0_16px_rgba(239,68,68,0.2)]': assessment.riskLevel === 'critical',
-                        }"
-                      >
-                        {{ assessment.riskScore }}
-                      </span>
+                    <td class="py-4 px-6">
+                      <div class="flex items-center justify-center">
+                        <span
+                          class="inline-flex items-center justify-center min-w-[2.5rem] w-10 h-10 rounded-lg text-base font-bold transition-all duration-200"
+                          :class="{
+                            'bg-emerald-500/15 text-emerald-400 group-hover:scale-[1.03] group-hover:shadow-[0_0_16px_rgba(16,185,129,0.2)]': assessment.riskLevel === 'ok',
+                            'bg-amber-500/15 text-amber-400 group-hover:scale-[1.03] group-hover:shadow-[0_0_16px_rgba(245,158,11,0.2)]': assessment.riskLevel === 'warning',
+                            'bg-red-500/15 text-red-400 group-hover:scale-[1.03] group-hover:shadow-[0_0_16px_rgba(239,68,68,0.2)]': assessment.riskLevel === 'critical',
+                          }"
+                        >
+                          {{ assessment.riskScore }}
+                        </span>
+                      </div>
                     </td>
-                    <td class="py-4 px-4 text-slate-300">
+                    <td class="py-4 px-6 text-slate-300">
                       {{ assessment.speed }} km/h
                     </td>
-                    <td class="py-4 px-4 text-right">
+                    <td class="py-4 px-6 text-right">
                       <button
                         class="text-xs text-slate-500 hover:text-slate-400 transition-colors duration-200"
                         @click.stop="focusVehicleOnMap(assessment)"
@@ -711,65 +713,66 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
           </div>
         </div>
 
-        <!-- RIGHT: Context + Action + Trend (30%) -->
-        <div class="lg:col-span-3 space-y-6">
-          <!-- Systémový pohled (active insight block) -->
-          <div class="rounded-xl border border-slate-700/50 bg-slate-900 p-6">
-            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
-              Systémový pohled
-            </h3>
-            <p class="text-sm text-slate-300 mb-4">
-              {{ systemInsight }}
-            </p>
-            <div class="space-y-2.5">
-              <div
-                v-for="row in [
-                  { label: 'Rychlost', color: 'bg-amber-500', value: riskFactorTotals.speedTotal },
-                  { label: 'Bez komunikace', color: 'bg-red-500', value: riskFactorTotals.noUpdateTotal },
-                  { label: 'ECO události', color: 'bg-purple-500', value: riskFactorTotals.ecoTotal },
-                  { label: 'Počasí', color: 'bg-blue-500', value: riskFactorTotals.weatherTotal },
-                ]"
-                :key="row.label"
-                class="flex items-center gap-3"
-              >
-                <span class="text-xs text-slate-400 w-24 shrink-0">{{ row.label }}</span>
-                <span class="text-xs font-medium text-slate-300 w-5">{{ row.value }}</span>
-                <div class="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">
-                  <div
-                    class="h-full rounded-full transition-all duration-300"
-                    :class="row.color"
-                    :style="{ width: `${Math.min(100, (row.value / Math.max(1, riskFactorMax)) * 100)}%` }"
-                  />
+        <!-- RIGHT COLUMN -->
+        <div class="flex flex-col gap-6 min-w-0 h-full">
+          <div class="flex flex-col gap-6 flex-1">
+            <!-- Predikce rizika (24h) -->
+            <RiskPredictionCard
+              :critical-count="criticalCount"
+              :vehicles-without-communication="vehiclesWithoutCommunication"
+              :risk-trend-increasing="riskTrendIncreasing"
+              @show-at-risk="toggleFilter('critical')"
+            />
+
+            <!-- Systémový pohled -->
+            <div class="rounded-xl border border-slate-700/50 bg-slate-900 p-6">
+              <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
+                Systémový pohled
+              </h3>
+              <p class="text-sm text-slate-300 mb-4">
+                {{ systemInsight }}
+              </p>
+              <div class="space-y-3">
+                <div
+                  v-for="row in [
+                    { label: 'Rychlost', color: 'bg-amber-500', value: riskFactorTotals.speedTotal },
+                    { label: 'Bez komunikace', color: 'bg-red-500', value: riskFactorTotals.noUpdateTotal },
+                    { label: 'ECO události', color: 'bg-purple-500', value: riskFactorTotals.ecoTotal },
+                    { label: 'Počasí', color: 'bg-blue-500', value: riskFactorTotals.weatherTotal },
+                  ]"
+                  :key="row.label"
+                  class="flex items-center gap-3"
+                >
+                  <span class="text-xs text-slate-400 w-24 shrink-0">{{ row.label }}</span>
+                  <span class="text-xs font-medium text-slate-300 w-5">{{ row.value }}</span>
+                  <div class="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                    <div
+                      class="h-full rounded-full transition-all duration-300"
+                      :class="row.color"
+                      :style="{ width: `${Math.min(100, (row.value / Math.max(1, riskFactorMax)) * 100)}%` }"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
+
+            <!-- Trend rizika (posledních 7 dní) -->
+            <div class="rounded-xl border border-slate-700/50 bg-slate-900 p-6">
+              <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
+                Trend rizika (posledních 7 dní)
+              </h3>
+              <RiskTrendChart :data="mockTrendData" />
+              <p class="text-xs text-slate-500 mt-3">
+                Trend pomáhá identifikovat zhoršující se provozní situaci.
+              </p>
+            </div>
           </div>
 
-          <!-- Trend rizika (posledních 7 dní) -->
-          <div class="rounded-xl border border-slate-700/50 bg-slate-900 p-6">
-            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
-              Trend rizika (posledních 7 dní)
-            </h3>
-            <RiskTrendChart :data="mockTrendData" />
-            <p class="text-xs text-slate-500 mt-3">
-              Trend pomáhá identifikovat zhoršující se provozní situaci.
-            </p>
-          </div>
-
-          <!-- Predikce rizika (24h) -->
-          <RiskPredictionCard
-            :critical-count="criticalCount"
-            :vehicles-without-communication="vehiclesWithoutCommunication"
-            :risk-trend-increasing="riskTrendIncreasing"
-            @show-at-risk="toggleFilter('critical')"
-          />
-
-          <!-- Prioritní fronta (TOP 5) -->
           <PriorityQueueCard
+            class="flex-1"
             :assessments="riskAssessments"
             @resolve="openDrawer"
           />
-
         </div>
       </div>
 

@@ -103,11 +103,11 @@ function handleResolve(item: QueueItem) {
       <div
         v-for="item in topFive"
         :key="item.assessment.vehicleId"
-        class="flex items-start gap-3 py-4 px-4 rounded-lg border-l-4 transition-all duration-200 cursor-pointer hover:bg-slate-800/50 hover:shadow-md"
+        class="flex items-center gap-3 py-4 px-4 rounded-lg border-l-4 transition-all duration-200 cursor-pointer hover:bg-slate-800/50 hover:shadow-md"
         :class="getBorderClassByRisk(item.assessment.riskLevel)"
         @click="handleResolve(item)"
       >
-        <span class="text-[11px] font-medium text-slate-600 w-5 shrink-0 pt-0.5">
+        <span class="text-[11px] font-medium text-slate-600 w-5 shrink-0 text-left">
           #{{ item.position }}
         </span>
         <div class="min-w-0 flex-1">
@@ -146,7 +146,7 @@ function handleResolve(item: QueueItem) {
         </div>
         <button
           type="button"
-          class="shrink-0 self-center py-1.5 px-3 rounded-lg text-xs font-medium transition-colors duration-200"
+          class="shrink-0 w-24 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200"
           :class="item.position === 1
             ? 'bg-red-600 hover:bg-red-500 text-white'
             : 'border border-slate-600 text-slate-300 hover:bg-slate-700 hover:border-slate-500'"
