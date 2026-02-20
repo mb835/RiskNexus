@@ -1,4 +1,5 @@
-# Fleet Operational Risk Dashboard
+# RiskSentra
 
-AI-powered fleet operational risk dashboard built with Vue 3 + TypeScript.
-Work in progress.
+Operational Risk Intelligence Platform for Fleet Management
+
+RiskSentra is a product-oriented operational risk monitoring platform built on top of the GPS Dozor public API. It transforms raw telematics data into actionable risk insights for fleet managers.

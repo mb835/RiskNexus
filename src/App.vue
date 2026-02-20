@@ -372,10 +372,6 @@ function toggleFilter(level: "all" | RiskLevel) {
     activeFilter.value === level ? "all" : level;
 }
 
-function handleToggleCriticalFilter() {
-  toggleFilter(activeFilter.value === "critical" ? "all" : "critical");
-}
-
 function scrollToRiskTable() {
   if (riskTableRef.value) {
     riskTableRef.value.scrollIntoView({
@@ -383,6 +379,15 @@ function scrollToRiskTable() {
       block: "start",
     });
   }
+}
+
+function handlePredictionCtaClick() {
+  const goingToAll = activeFilter.value === "critical";
+  activeFilter.value = goingToAll ? "all" : "critical";
+  currentView.value = "dashboard";
+  nextTick(() => {
+    setTimeout(() => scrollToRiskTable(), 100);
+  });
 }
 
 function handleHeroFilterToggle() {
@@ -423,8 +428,30 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
     <!-- HEADER -->
     <div class="flex flex-wrap justify-between items-start gap-4 mb-8">
       <div>
+        <div class="flex items-center gap-3 mb-2">
+          <span class="inline-flex items-center justify-center text-blue-500" aria-hidden="true">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="h-6 w-6 shrink-0"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <circle cx="13" cy="11" r="2.5" fill="currentColor" />
+              <g class="radar-sweep">
+                <path d="M 12 3 A 9 9 0 0 0 3 12" stroke="currentColor" stroke-width="0.5" fill="none" opacity="0.35" />
+                <line x1="12" y1="12" x2="12" y2="3" stroke="currentColor" stroke-width="0.5" opacity="0.7" />
+              </g>
+            </svg>
+          </span>
+          <span class="text-lg font-bold text-slate-300">RiskNexus</span>
+        </div>
         <h1 class="text-2xl font-bold text-slate-100">
-          Přehled provozních rizik vozového parku
+          Řízení operačních rizik vozidel
         </h1>
         <p class="text-slate-500 text-sm mt-1">
           Aktuální stav rizik v reálném čase
@@ -649,6 +676,7 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
 
           <!-- Risk Table -->
           <div
+            id="vehicles-section"
             ref="riskTableRef"
             class="rounded-xl border border-slate-700/50 bg-slate-900 overflow-hidden"
           >
@@ -767,7 +795,7 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
               :vehicles-without-communication="vehiclesWithoutCommunication"
               :risk-trend-increasing="riskTrendIncreasing"
               :critical-filter-active="activeFilter === 'critical'"
-              @show-at-risk="handleToggleCriticalFilter"
+              @show-at-risk="handlePredictionCtaClick"
             />
 
             <!-- Systémový pohled -->
@@ -884,6 +912,20 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
 </template>
 
 <style scoped>
+.radar-sweep {
+  transform-origin: 12px 12px;
+  animation: radarSweep 6s linear infinite;
+}
+
+@keyframes radarSweep {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .priority-dot {
   width: 8px;
   height: 8px;
