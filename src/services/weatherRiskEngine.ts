@@ -41,8 +41,9 @@ export function calculateWeatherRisk(weather: WeatherData): {
 } {
   let score = 0;
   const reasons: string[] = [];
-
+  
   // Precipitation
+  
   if (weather.precipitation > 10) {
     score += 3;
     reasons.push("Heavy precipitation");

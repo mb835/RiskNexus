@@ -29,6 +29,8 @@ const mapContainer = ref<HTMLElement | null>(null);
 const mapInstance  = ref<L.Map | null>(null);
 const clusterGroup = ref<L.MarkerClusterGroup | null>(null);
 const mapFocus     = ref<"europe" | "czech">("europe");
+const isMapDestroyed = ref(false);
+let focusTimeout: ReturnType<typeof setTimeout> | null = null;
 
 /* -------------------------
    RISK LABEL
@@ -42,6 +44,17 @@ function getRiskLabel(level: RiskLevel): string {
       return "Varování";
     case "critical":
       return "Kritické";
+  }
+}
+
+function getRiskColor(level: RiskLevel): string {
+  switch (level) {
+    case "ok":
+      return "#22c55e";
+    case "warning":
+      return "#f59e0b";
+    case "critical":
+      return "#ef4444";
   }
 }
 
@@ -79,8 +92,14 @@ function initMap() {
 -------------------------- */
 
 function renderMarkers() {
+  if (isMapDestroyed.value) return;
+
   const cluster = clusterGroup.value;
-  if (!mapInstance.value || !cluster) return;
+  const map = mapInstance.value;
+  if (!map || !cluster) return;
+
+  const mapWithLoaded = map as L.Map & { _loaded?: boolean };
+  if (mapWithLoaded._loaded === false) return;
 
   cluster.clearLayers();
 
@@ -91,7 +110,9 @@ function renderMarkers() {
   });
 
   if (valid.length === 0) {
-    mapInstance.value.setView([50, 14], 5, { animate: false });
+    if (map && (map as L.Map & { _loaded?: boolean })._loaded !== false) {
+      map.setView([50, 14], 5, { animate: false });
+    }
     return;
   }
 
@@ -108,7 +129,18 @@ function renderMarkers() {
     const vehicleTypeCzech = getVehicleTypeCzech(assessment.vehicleName);
     const icon = getVehicleIcon(vehicleType, assessment.riskLevel);
 
+    const weatherReason = assessment.reasons.find((r) => r.type === "weather");
+    const weatherContribution =
+      weatherReason && Number(weatherReason.value) > 0
+        ? Number(weatherReason.value)
+        : 0;
+
     const marker = L.marker([lat, lng], { icon });
+
+    const riskScoreLine =
+      weatherContribution > 0
+        ? `<strong>Risk Score:</strong> ${assessment.riskScore} <span style="color:#38bdf8;font-size:10px;">(+${weatherContribution} počasí)</span>`
+        : `<strong>Risk Score:</strong> ${assessment.riskScore}`;
 
     const popupContent = `
       <div style="font-family: system-ui; min-width: 220px;">
@@ -128,6 +160,9 @@ function renderMarkers() {
           <strong>Rychlost:</strong> ${assessment.speed} km/h
         </div>
         <div style="font-size:12px;">
+          ${riskScoreLine}
+        </div>
+        <div style="font-size:12px;color:${getRiskColor(assessment.riskLevel)};">
           <strong>Riziko:</strong> ${getRiskLabel(
             assessment.riskLevel
           )}
@@ -135,7 +170,9 @@ function renderMarkers() {
       </div>
     `;
 
-    marker.bindPopup(popupContent);
+    if (map) {
+      marker.bindPopup(popupContent);
+    }
     cluster.addLayer(marker);
   });
 
@@ -147,17 +184,21 @@ function renderMarkers() {
 -------------------------- */
 
 function applyViewport(bounds: L.LatLngBounds, count: number) {
-  if (!mapInstance.value) return;
+  const map = mapInstance.value;
+  if (!map) return;
+
+  const mapWithLoaded = map as L.Map & { _loaded?: boolean };
+  if (mapWithLoaded._loaded === false) return;
 
   if (mapFocus.value === "czech") {
-    mapInstance.value.setView([49.8, 15.5], 7, { animate: false });
+    map.setView([49.8, 15.5], 7, { animate: false });
     return;
   }
 
   if (count === 1) {
-    mapInstance.value.setView(bounds.getCenter(), 9, { animate: false });
+    map.setView(bounds.getCenter(), 9, { animate: false });
   } else {
-    mapInstance.value.fitBounds(bounds, {
+    map.fitBounds(bounds, {
       padding: [50, 50],
       animate: false,
     });
@@ -176,17 +217,26 @@ onMounted(() => {
   if (props.focusCoordinates && mapInstance.value) {
     const { latitude, longitude } = props.focusCoordinates;
 
-    setTimeout(() => {
-      if (!mapInstance.value) return;
+    focusTimeout = setTimeout(() => {
+      if (!mapInstance.value || isMapDestroyed.value) return;
       mapInstance.value.invalidateSize();
       mapInstance.value.setView([latitude, longitude], 15, {
-        animate: true,
+        animate: false,
       });
+      focusTimeout = null;
     }, 200);
   }
 });
 
 onUnmounted(() => {
+  isMapDestroyed.value = true;
+  if (focusTimeout) {
+    clearTimeout(focusTimeout);
+    focusTimeout = null;
+  }
+  mapInstance.value?.closePopup();
+  clusterGroup.value?.clearLayers();
+
   if (clusterGroup.value && mapInstance.value) {
     mapInstance.value.removeLayer(clusterGroup.value);
     clusterGroup.value = null;

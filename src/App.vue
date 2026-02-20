@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from "vue";
+import { ref, onMounted, computed } from "vue";
 import RiskChart from "./components/RiskChart.vue";
 import FleetMap from "./components/FleetMap.vue";
 import VehicleDetailDrawer from "./components/VehicleDetailDrawer.vue";
@@ -14,14 +14,24 @@ import type {
   AssessmentWithService,
   RiskReason,
   RiskLevel,
+  ServiceInfo,
 } from "./types/risk";
+import type { EcoEvent } from "./types/ecoEvent";
 
 /* -------------------------
    STATE
 -------------------------- */
 
 const loading = ref(true);
-const riskAssessments = ref<AssessmentWithService[]>([]);
+
+interface BaseDataItem {
+  vehicle: Vehicle;
+  ecoEvents: EcoEvent[];
+  weatherData: WeatherData | undefined;
+  serviceInfo: ServiceInfo;
+}
+
+const baseData = ref<BaseDataItem[]>([]);
 const currentView = ref<"dashboard" | "map">("dashboard");
 const activeFilter = ref<"all" | RiskLevel>("all");
 const weatherRiskEnabled = ref(false);
@@ -67,7 +77,6 @@ async function loadData() {
           const lng = vehicle.LastPosition?.Longitude;
 
           if (
-            weatherRiskEnabled.value &&
             lat != null &&
             lng != null &&
             String(lat).trim() !== "" &&
@@ -85,14 +94,16 @@ async function loadData() {
             }
           }
 
+          const odometer = vehicle.Odometer ?? 0;
+          const serviceInfo: ServiceInfo = {
+            odometer,
+            ...calculateServiceStatus(odometer),
+          };
           return {
-            assessment: calculateRisk(
-              vehicle,
-              ecoEvents,
-              vehicleWeatherData,
-              !!weatherRiskEnabled.value,
-            ),
             vehicle,
+            ecoEvents,
+            weatherData: vehicleWeatherData,
+            serviceInfo,
           };
         } catch (err) {
           console.error("Vehicle risk pipeline error:", vehicle.Code, err);
@@ -101,23 +112,11 @@ async function loadData() {
       })
     );
 
-    const validPairs = rawPairs.filter(
-      (p): p is { assessment: RiskAssessment; vehicle: Vehicle } => p !== null,
+    const valid = rawPairs.filter(
+      (p): p is BaseDataItem => p !== null,
     );
 
-    // Attach real service info derived from the API odometer value
-    const assessments: AssessmentWithService[] = validPairs.map(({ assessment, vehicle }) => {
-      const odometer = vehicle.Odometer ?? 0;
-      return {
-        ...assessment,
-        serviceInfo: {
-          odometer,
-          ...calculateServiceStatus(odometer),
-        },
-      };
-    });
-
-    riskAssessments.value = assessments;
+    baseData.value = valid;
   } catch (error) {
     console.error("Načítání dat selhalo:", error);
   } finally {
@@ -127,9 +126,20 @@ async function loadData() {
 
 onMounted(loadData);
 
-watch(weatherRiskEnabled, async () => {
-  await loadData();
-});
+const riskAssessments = computed<AssessmentWithService[]>(() =>
+  baseData.value.map((item) => {
+    const assessment = calculateRisk(
+      item.vehicle,
+      item.ecoEvents,
+      item.weatherData,
+      weatherRiskEnabled.value
+    );
+    return {
+      ...assessment,
+      serviceInfo: item.serviceInfo,
+    };
+  })
+);
 
 /* -------------------------
    FILTROVANÁ + SEŘAZENÁ DATA
