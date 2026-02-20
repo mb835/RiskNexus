@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, nextTick } from "vue";
-import RiskChart from "./components/RiskChart.vue";
 import RiskTrendChart from "./components/RiskTrendChart.vue";
 import RiskPredictionCard from "./components/RiskPredictionCard.vue";
 import PriorityQueueCard from "./components/PriorityQueueCard.vue";
@@ -643,13 +642,6 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
       <div class="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8 items-stretch">
         <!-- LEFT COLUMN -->
         <div class="flex flex-col gap-6 min-w-0 h-full">
-          <!-- Risk Distribution Card -->
-          <RiskChart
-              :critical="criticalCount"
-              :warning="warningCount"
-              :ok="okCount"
-            />
-
           <!-- Top 3 nejrizikovější vozidla -->
           <div v-if="priorityVehicles.length > 0">
             <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
@@ -798,6 +790,13 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
               @show-at-risk="handlePredictionCtaClick"
             />
 
+            <!-- Prioritní fronta (Top 5) -->
+            <PriorityQueueCard
+              class="flex-1"
+              :assessments="riskAssessments"
+              @resolve="openDrawer"
+            />
+
             <!-- Systémový pohled -->
             <div class="rounded-xl border border-slate-700/50 bg-slate-900 p-6">
               <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
@@ -841,12 +840,6 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
               </p>
             </div>
           </div>
-
-          <PriorityQueueCard
-            class="flex-1"
-            :assessments="riskAssessments"
-            @resolve="openDrawer"
-          />
         </div>
       </div>
 
