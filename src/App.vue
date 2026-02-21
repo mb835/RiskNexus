@@ -923,12 +923,6 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
             title="Přidá kontextový rizikový faktor podle aktuálního počasí v lokaci vozidla."
           >ⓘ</span>
         </div>
-        <p
-          v-if="weatherRiskEnabled"
-          class="text-sm text-slate-500/70"
-        >
-          {{ weatherContextLine }}
-        </p>
       </div>
 
       <FleetMap

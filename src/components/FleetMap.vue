@@ -231,6 +231,13 @@ ${isServiceCritical ? `
   <div style="font-size:12px;color:${getRiskColor(assessment.riskLevel)};"><strong>Riziko:</strong> ${getRiskLabel(assessment.riskLevel)}</div>
   ${serviceSectionHtml}
   ${weatherSectionHtml}
+  <button
+    data-vehicle-id="${assessment.vehicleId}"
+    class="popup-open-detail-btn"
+    style="margin-top:10px;width:100%;background:#2563eb;color:white;border:none;padding:6px 10px;font-size:12px;border-radius:6px;cursor:pointer;"
+  >
+    Zobrazit detail
+  </button>
 </div>
 `;
 
@@ -240,18 +247,18 @@ ${isServiceCritical ? `
       const popupElement = e.popup.getElement();
       if (!popupElement) return;
 
-      const button = popupElement.querySelector<HTMLButtonElement>(
+      const buttons = popupElement.querySelectorAll<HTMLButtonElement>(
         "button[data-vehicle-id]"
       );
 
-      if (!button) return;
+      buttons.forEach((button) => {
+        const vehicleId = button.getAttribute("data-vehicle-id");
+        if (!vehicleId) return;
 
-      const vehicleId = button.getAttribute("data-vehicle-id");
-      if (!vehicleId) return;
-
-      button.onclick = () => {
-        handleOpenDetail(vehicleId, button);
-      };
+        button.onclick = () => {
+          handleOpenDetail(vehicleId, button);
+        };
+      });
     });
 
     cluster.addLayer(marker);
