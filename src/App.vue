@@ -715,12 +715,12 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
               Riziková vozidla
             </h3>
             <div class="overflow-x-auto">
-              <table class="w-full text-sm">
+              <table class="w-full text-sm table-fixed">
                 <thead>
                   <tr class="border-t border-slate-700/50">
                     <th class="w-1" />
-                    <th class="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Vozidlo</th>
-                    <th class="text-center py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    <th class="w-[55%] text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Vozidlo</th>
+                    <th class="w-[120px] text-center py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                       <span class="relative inline-flex items-center justify-center gap-1 group/risk">
                         Risk score
                         <span class="text-slate-400 cursor-help">ⓘ</span>
@@ -739,8 +739,8 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
                         </span>
                       </span>
                     </th>
-                    <th class="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Rychlost</th>
-                    <th class="text-right py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Akce</th>
+                    <th class="w-[120px] text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Rychlost</th>
+                    <th class="w-[100px] text-right py-3 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Akce</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -759,8 +759,9 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
                       }"
                     />
                     <td class="py-4 px-6">
-                      <p class="font-medium text-slate-100 flex items-center gap-2">
-                        <span class="truncate">{{ assessment.vehicleName }}</span>
+                      <div class="min-w-0">
+                        <p class="font-medium text-slate-100 flex items-center gap-2">
+                          <span class="truncate">{{ assessment.vehicleName }}</span>
                         <span
                           v-if="assessment.serviceInfo.serviceStatus !== 'ok'"
                           class="shrink-0 text-xs text-amber-400"
@@ -783,6 +784,7 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
                         >
                           —
                         </span>
+                      </div>
                       </div>
                     </td>
                     <td class="py-4 px-6">
