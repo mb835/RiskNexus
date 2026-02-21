@@ -103,6 +103,8 @@ function initMap() {
     center: [50.0755, 14.4378],
     zoom: 6,
     maxZoom: 18,
+    zoomSnap: 1,
+    zoomDelta: 1,
   });
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {

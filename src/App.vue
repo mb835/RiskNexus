@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, nextTick } from "vue";
-import RiskTrendChart from "./components/RiskTrendChart.vue";
 import RiskPredictionCard from "./components/RiskPredictionCard.vue";
 import PriorityQueueCard from "./components/PriorityQueueCard.vue";
 import FleetMap from "./components/FleetMap.vue";
@@ -224,42 +223,6 @@ const highestRiskVehicle = computed(() => {
   return p.length > 0 ? p[0] : null;
 });
 
-const mockTrendData = computed(() => {
-  const crit = criticalCount.value;
-  const warn = warningCount.value;
-  const seed = (x: number, i: number) => ((x * 31 + i) % 5) - 2;
-  return Array.from({ length: 7 }, (_, i) => ({
-    day: i,
-    critical: Math.max(0, crit + seed(crit || 1, i)),
-    warning: Math.max(0, warn + seed(warn || 1, i + 10)),
-  }));
-});
-
-const riskFactorTotals = computed(() => {
-  let speedTotal = 0;
-  let noUpdateTotal = 0;
-  let ecoTotal = 0;
-  let weatherTotal = 0;
-  for (const a of riskAssessments.value) {
-    for (const r of a.reasons) {
-      if (r.type === "speedExtreme") speedTotal += 4;
-      else if (r.type === "speedHigh") speedTotal += 3;
-      else if (r.type === "speedAboveLimit") speedTotal += 2;
-      else if (r.type === "speedSlightlyElevated") speedTotal += 1;
-      else if (r.type === "noUpdateCritical") noUpdateTotal += 6;
-      else if (r.type === "noUpdate") noUpdateTotal += 2;
-      else if (r.type === "ecoEvent") ecoTotal += Number(r.value) || 0;
-      else if (r.type === "weather" && Number(r.value) > 0) weatherTotal += Number(r.value);
-    }
-  }
-  return { speedTotal, noUpdateTotal, ecoTotal, weatherTotal };
-});
-
-const riskFactorMax = computed(() => {
-  const t = riskFactorTotals.value;
-  return Math.max(1, t.speedTotal, t.noUpdateTotal, t.ecoTotal, t.weatherTotal);
-});
-
 const vehiclesWithoutCommunication = computed(() =>
   riskAssessments.value.filter((r) =>
     r.reasons.some(
@@ -270,33 +233,7 @@ const vehiclesWithoutCommunication = computed(() =>
   ).length
 );
 
-const riskTrendIncreasing = computed(() => {
-  const data = mockTrendData.value;
-  if (data.length < 2) return false;
-  const today = data[data.length - 1];
-  const yesterday = data[data.length - 2];
-  const todayTotal = (today?.critical ?? 0) + (today?.warning ?? 0);
-  const yesterdayTotal = (yesterday?.critical ?? 0) + (yesterday?.warning ?? 0);
-  return todayTotal > yesterdayTotal;
-});
-
-const systemInsight = computed(() => {
-  const { speedTotal, noUpdateTotal } = riskFactorTotals.value;
-  if (criticalCount.value === 0) {
-    return "Provoz je stabilní bez kritických stavů.";
-  }
-  if (noUpdateTotal > speedTotal && noUpdateTotal > 0) {
-    return "Hlavní zdroj rizika: ztráta komunikace vozidel.";
-  }
-  if (speedTotal > 0) {
-    return "Hlavní zdroj rizika: překročení rychlosti.";
-  }
-  return "Provoz vyžaduje pozornost.";
-});
-
-const weatherContextLine = computed(() => {
-  return "Počasí se vyhodnocuje individuálně podle lokace vozidel.";
-});
+const riskTrendIncreasing = computed(() => false);
 
 const lastUpdateText = computed(() => {
   const all = riskAssessments.value;
@@ -838,48 +775,6 @@ function focusVehicleOnMap(assessment: RiskAssessment) {
               @resolve="openDrawer"
             />
 
-            <!-- Systémový pohled -->
-            <div class="rounded-xl border border-slate-700/50 bg-slate-900 p-6">
-              <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
-                Systémový pohled
-              </h3>
-              <p class="text-sm text-slate-300 mb-4">
-                {{ systemInsight }}
-              </p>
-              <div class="space-y-3">
-                <div
-                  v-for="row in [
-                    { label: 'Rychlost', color: 'bg-amber-500', value: riskFactorTotals.speedTotal },
-                    { label: 'Bez komunikace', color: 'bg-red-500', value: riskFactorTotals.noUpdateTotal },
-                    { label: 'ECO události', color: 'bg-purple-500', value: riskFactorTotals.ecoTotal },
-                    { label: 'Počasí', color: 'bg-blue-500', value: riskFactorTotals.weatherTotal },
-                  ]"
-                  :key="row.label"
-                  class="flex items-center gap-3"
-                >
-                  <span class="text-xs text-slate-400 w-24 shrink-0">{{ row.label }}</span>
-                  <span class="text-xs font-medium text-slate-300 w-5">{{ row.value }}</span>
-                  <div class="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">
-                    <div
-                      class="h-full rounded-full transition-all duration-300"
-                      :class="row.color"
-                      :style="{ width: `${Math.min(100, (row.value / Math.max(1, riskFactorMax)) * 100)}%` }"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Trend rizika (posledních 7 dní) -->
-            <div class="rounded-xl border border-slate-700/50 bg-slate-900 p-6">
-              <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
-                Trend rizika (posledních 7 dní)
-              </h3>
-              <RiskTrendChart :data="mockTrendData" />
-              <p class="text-xs text-slate-500 mt-3">
-                Trend pomáhá identifikovat zhoršující se provozní situaci.
-              </p>
-            </div>
           </div>
         </div>
       </div>
