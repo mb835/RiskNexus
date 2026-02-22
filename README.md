@@ -50,14 +50,17 @@ Hlavní moduly:
 Business logika je oddělena od UI vrstvy.  
 Komponenty pouze renderují data – výpočty probíhají mimo ně.
 
-### Backend
-- Express proxy vrstva
-- Jednotný `/api/*` kontrakt
-- Oddělení frontend ↔ externí GPS API
-- Validace parametrů
-- Základní bezpečnostní vrstva
+#### Backend
 
-Frontend tak není závislý na implementačních detailech externího API.
+- Express proxy vrstva  
+- Jednotný `/api/*` kontrakt  
+- Oddělení frontend ↔ externí GPS API  
+- Validace parametrů  
+- Základní bezpečnostní vrstva  
+
+Proxy server byl navržen jako bezpečnostní a architektonická bariéra
+mezi klientskou aplikací a externími službami.  
+Zajišťuje ochranu API klíčů a kontrolu nad komunikací s externími API.
 
 ---
 
