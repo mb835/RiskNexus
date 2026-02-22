@@ -72,7 +72,7 @@ Ještě před zahájením práce jsem si v Cursoru definoval jasná pravidla (ru
 - minimální a cílené změny  
 - zachování architektonické konzistence  
 
-AI jsem používal jako sparring partnera – nástroj pro ověření uvažování a bezpečný refaktoring.  
+AI jsem používal jako sparring partnera nástroj pro ověření uvažování a bezpečný refaktoring.  
 Finální rozhodnutí a validace byly vždy manuální.
 
 ---
@@ -185,8 +185,6 @@ Projekt demonstruje:
 - kontrolu nad technickým dluhem  
 - práci s proxy a API integrací  
 - disciplinované využití AI nástrojů  
-
-RiskNexus je základ profesionální fleet risk platformy – ne jen další dashboard nad API.
 
 ---
 
