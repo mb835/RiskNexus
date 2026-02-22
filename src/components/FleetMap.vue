@@ -379,6 +379,23 @@ watch(
   { immediate: true }
 );
 
+watch(
+  () => props.focusCoordinates,
+  (coords) => {
+    if (!coords) return;
+    if (!mapInstance.value) return;
+    if (isMapDestroyed.value) return;
+
+    const { latitude, longitude } = coords;
+
+    mapInstance.value.setView([latitude, longitude], 15, {
+      animate: false,
+    });
+
+    resizeMapSafely();
+  }
+);
+
 </script>
 
 <template>
