@@ -29,12 +29,14 @@ Cílem je rychlá prioritizace zásahů bez nutnosti manuální analýzy dat.
 
 ---
 
-## 🧠 Architektura
+## 🧰 Použitý technologický stack
 
-### 🎨 Frontend
-⚡ **Vue 3 + TypeScript**  
-🎨 **TailwindCSS**  
-🗺️ **Leaflet + MarkerCluster**  
+![Vue](https://img.shields.io/badge/Vue%203-42b883?style=for-the-badge&logo=vue.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178c6?style=for-the-badge&logo=typescript&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white)
+![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-06b6d4?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Leaflet](https://img.shields.io/badge/Leaflet-199900?style=for-the-badge&logo=leaflet&logoColor=white)
 
 Hlavní moduly:
 - `riskEngine.ts`
