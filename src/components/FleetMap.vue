@@ -386,18 +386,18 @@ watch(
     <div class="flex justify-end">
       <div class="flex bg-slate-800 rounded-lg overflow-hidden border border-slate-700">
         <button
-          class="px-4 py-2 text-sm"
+          class="flex items-center justify-center px-4 py-2 text-sm min-h-[2.25rem]"
           :class="mapFocus === 'europe' ? 'bg-slate-700 text-white' : 'text-slate-400'"
           @click="mapFocus = 'europe'"
         >
-          🌍 Celá Evropa
+          Celá Evropa
         </button>
         <button
-          class="px-4 py-2 text-sm"
+          class="flex items-center justify-center px-4 py-2 text-sm min-h-[2.25rem]"
           :class="mapFocus === 'czech' ? 'bg-slate-700 text-white' : 'text-slate-400'"
           @click="mapFocus = 'czech'"
         >
-          🇨🇿 Fokus ČR
+          Fokus ČR
         </button>
       </div>
     </div>
