@@ -187,3 +187,42 @@ Projekt demonstruje:
 - disciplinované využití AI nástrojů  
 
 RiskNexus je základ profesionální fleet risk platformy – ne jen další dashboard nad API.
+
+
+## 🛠 Local Setup
+
+### Requirements
+- Node.js 18+
+- npm 9+
+
+### Install
+```bash
+git clone https://github.com/your-username/risknexus.git
+cd risknexus
+npm install
+```
+
+### Configure
+Create a `.env` file in the project root:
+
+```env
+GPS_API_URL=...
+GPS_API_USERNAME=...
+GPS_API_PASSWORD=...
+WEATHER_API_KEY=...
+```
+
+### Run
+
+Backend (Express proxy):
+```bash
+npm run server
+```
+
+Frontend (Vite):
+```bash
+npm run dev
+```
+
+Frontend runs on:
+http://localhost:5173
