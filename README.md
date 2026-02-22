@@ -1,6 +1,6 @@
 # RiskNexus – Operational Fleet Risk Dashboard
 
-RiskNexus je webová aplikace pro monitoring a prioritizaci provozních rizik vozového parku v reálném čase.
+RiskNexus je real-time dashboard pro řízení rizik vozového parku.
 
 Nejde o mapové demo nad GPS API, ale o rozhodovací nástroj pro každodenní operativní práci.
 
