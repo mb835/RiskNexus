@@ -29,7 +29,7 @@ Cílem je rychlá prioritizace zásahů bez nutnosti manuální analýzy dat.
 
 ---
 
-## 🧰 Použitý technologický stack
+## 🧰 Tech Stack
 
 ![Vue](https://img.shields.io/badge/Vue%203-42b883?style=for-the-badge&logo=vue.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178c6?style=for-the-badge&logo=typescript&logoColor=white)
