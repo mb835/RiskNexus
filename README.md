@@ -1,6 +1,6 @@
 # RiskNexus
 
-**Operational Fleet Risk Dashboard**
+**Řízení operačních rizik vozidel **
 
 ## 🎯 Pro koho je appka a proč
 
@@ -33,6 +33,7 @@ RiskNexus převádí surové provozní signály (rychlost, offline stav, servisn
 * **Problém:** CORS chyby a vystavení API klíčů při přímém volání externího API.
 * **Jak jsem to vyřešil:** Zavedl jsem Express proxy vrstvu, vytvořil jednotný `/api/*` kontrakt a přidal serverovou validaci parametrů s fallback logikou.
 * **Výsledek:** Čistá separace frontend ↔ backend a kontrolovaná komunikace s externími službami.
+
 ---
 
 ## 🤖 Využití AI nástrojů
@@ -60,3 +61,5 @@ AI sloužila jako podpůrný nástroj pro zrychlení iterací, nicméně fináln
 * **Robustnost:** Zavedení unit testů pro risk model, integrace CI pipeline, striktnější validace vstupů.
 * **Škálování:** Přechod na WebSocket místo HTTP pollingu, server-side agregace, nasazení cache vrstvy.
 * **Risk model:** Rozšíření o live dopravní data, historické vzorce chování řidiče a prediktivní hodnocení.
+
+* Pro detailní technický rozpis viz [READMEV2.md](READMEV2.md).
