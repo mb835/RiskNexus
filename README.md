@@ -17,6 +17,22 @@ RiskNexus převádí surové provozní signály (rychlost, offline stav, servisn
 
 ---
 
+## Jak vypadal můj workflow
+
+AI sloužila jako podpůrný nástroj pro zrychlení iterací, nicméně finální rozhodnutí a validace byly vždy manuální. Prompty do Cursoru byly psány v angličtině kvůli maximální terminologické přesnosti.
+
+**Nástroje:**
+* **ChatGPT:** Architektonické konzultace, návrh risk modelu, práce s edge cases.
+* **Cursor:** Implementace a cílený refaktoring.
+
+**Workflow:**
+1. Definice problému a architektonického dopadu.
+2. Návrh řešení s AI jako sparring partnerem.
+3. Implementace s jasně omezeným scope *(ochrana proti feature creepu)*.
+4. Manuální validace (Network tab, Console, testování edge cases).
+5. Commit až po plné stabilizaci.
+
+
 ## Na co jsem narazil a jak jsem to vyřešil
 
 ### Stabilita mapy (Leaflet + clustering)
@@ -33,23 +49,6 @@ RiskNexus převádí surové provozní signály (rychlost, offline stav, servisn
 * **Problém:** CORS chyby a vystavení API klíčů při přímém volání externího API.
 * **Jak jsem to vyřešil:** Zavedl jsem Express proxy vrstvu, vytvořil jednotný `/api/*` kontrakt a přidal serverovou validaci parametrů s fallback logikou.
 * **Výsledek:** Čistá separace frontend ↔ backend a kontrolovaná komunikace s externími službami.
-
----
-
-## Jak vypadal můj workflow
-
-AI sloužila jako podpůrný nástroj pro zrychlení iterací, nicméně finální rozhodnutí a validace byly vždy manuální. Prompty do Cursoru byly psány v angličtině kvůli maximální terminologické přesnosti.
-
-**Nástroje:**
-* **ChatGPT:** Architektonické konzultace, návrh risk modelu, práce s edge cases.
-* **Cursor:** Implementace a cílený refaktoring.
-
-**Workflow:**
-1. Definice problému a architektonického dopadu.
-2. Návrh řešení s AI jako sparring partnerem.
-3. Implementace s jasně omezeným scope *(ochrana proti feature creepu)*.
-4. Manuální validace (Network tab, Console, testování edge cases).
-5. Commit až po plné stabilizaci.
 
 ---
 
